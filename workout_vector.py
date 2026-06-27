@@ -3,14 +3,14 @@ import random
 
 WORKOUT_BOUNDS = {
     "days_per_week": (2, 6),
-    "session_minutes": (30, 90),
-    "chest_sets": (4, 24),
-    "back_sets": (4, 26),
-    "legs_sets": (4, 28),
-    "shoulder_sets": (4, 22),
-    "arm_sets": (4, 20),
+    "session_minutes": (45, 90),
+    "chest_sets": (20, 24),
+    "back_sets": (20, 26),
+    "legs_sets": (20, 28),
+    "shoulder_sets": (20, 22),
+    "arm_sets": (20, 20),
     "intensity": (0.50, 0.95),
-    "reps": (3, 15),
+    "reps": (4, 15),
     "rest_minutes": (1.0, 4.0),
 }
 
@@ -50,19 +50,13 @@ def round_vector(position):
 
 
 def target_sets(user, muscle):
-    # Calculates target sets for muscle group: base value adjusted by goal (0.85-1.15) and experience (0.70-1.15)
+    # Calculates target sets from workout bounds, adjusted by goal and experience
     goal = user.get("goal", "hypertrophy")
     experience = user.get("experience", "beginner")
 
-    base = {
-        "chest_sets": 14,
-        "back_sets": 16,
-        "legs_sets": 18,
-        "shoulder_sets": 12,
-        "arm_sets": 10,
-    }
+    low, high = WORKOUT_BOUNDS[muscle]
+    value = (low + high) / 2
 
-    value = base[muscle]
     if goal == "fat_loss":
         value *= 0.85
     elif goal == "strength":
@@ -74,7 +68,6 @@ def target_sets(user, muscle):
         value *= 1.15
 
     return value
-
 
 def target_intensity(user):
     # Returns target workout intensity: 0.85 (strength), 0.65 (fat_loss), 0.72 (hypertrophy)

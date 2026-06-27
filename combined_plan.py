@@ -98,7 +98,7 @@ def build_combined_plan(user, seed=42):
         },
     }
 
-
+# ganti jadi input (hypertrophy, beginner, dll)
 if __name__ == "__main__":
     user_profile = {
         "weight": 70,
