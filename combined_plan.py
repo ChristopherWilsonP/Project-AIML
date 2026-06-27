@@ -6,10 +6,12 @@ from workout_vector import optimize_workout
 
 
 def clamp(value, low=0.0, high=1.0):
+    # Constrains value between low and high bounds using: clamp = max(low, min(value, high))
     return max(low, min(value, high))
 
 
 def total_training_sets(workout):
+    # Calculates total weekly training sets: chest + back + legs + shoulder + arm
     return (
         workout["chest_sets"]
         + workout["back_sets"]
@@ -20,6 +22,8 @@ def total_training_sets(workout):
 
 
 def target_calories(user):
+    # Calculates daily target calories based on goal: maintenance = weight * 30, then adds/subtracts based on goal
+    # fat_loss: -400, hypertrophy: +400, strength: +250, default: maintenance
     weight = user.get("weight", 70)
     goal = user.get("goal", "hypertrophy")
     maintenance = weight * 30
@@ -34,6 +38,9 @@ def target_calories(user):
 
 
 def interaction_score(workout, diet, sleep, user):
+    # Calculates compatibility score between workout, diet, and sleep by penalizing misalignments
+    # Checks: protein >= max(weight*1.6, sets*1.4), calories >= target, sleep >= 7h + intensity bonus,
+    # Returns: clamp(1 - total_penalty) scaled 0-1
     penalty = 0
 
     weekly_sets = total_training_sets(workout)
@@ -57,6 +64,8 @@ def interaction_score(workout, diet, sleep, user):
 
 
 def build_combined_plan(user, seed=42):
+    # Combines optimized workout, diet, and sleep vectors into a single plan
+    # Computes weighted final score: 0.35*workout + 0.30*diet + 0.20*sleep + 0.15*compatibility
     workout_result = optimize_workout(user, seed=seed + 1)
     diet_result = optimize_diet(user, seed=seed + 2)
     sleep_result = optimize_sleep(user, seed=seed + 3)

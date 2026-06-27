@@ -11,20 +11,24 @@ SLEEP_BOUNDS = {
 
 
 def clamp(value, low=0.0, high=1.0):
+    # Constrains value between low and high bounds
     return max(low, min(value, high))
 
 
 def closeness(actual, target):
+    # Calculates how close actual is to target: clamp(1 - |actual-target|/target)
     if target == 0:
         return 0
     return clamp(1 - abs(actual - target) / target)
 
 
 def round_vector(position):
+    # Rounds all vector values to 2 decimal places
     return {key: round(value, 2) for key, value in position.items()}
 
 
 def circular_hour_distance(actual, target):
+    # Calculates shortest distance between hours on 24-hour cycle: min(diff, 24-diff)
     actual = actual % 24
     target = target % 24
     diff = abs(actual - target)
@@ -32,11 +36,13 @@ def circular_hour_distance(actual, target):
 
 
 def time_closeness(actual, target, tolerance=6):
+    # Scores time closeness accounting for 24-hour cycle: clamp(1 - distance/tolerance)
     diff = circular_hour_distance(actual, target)
     return clamp(1 - diff / tolerance)
 
 
 def target_sleep_hours(user):
+    # Calculates target sleep duration: 7.5h base, +0.5h (strength), +0.25h (advanced)
     goal = user.get("goal", "hypertrophy")
     experience = user.get("experience", "beginner")
 
@@ -50,6 +56,7 @@ def target_sleep_hours(user):
 
 
 def target_bedtime(user):
+    # Returns target bedtime: 22:30 (fat_loss), 23:00 (other goals)
     goal = user.get("goal", "hypertrophy")
     if goal == "fat_loss":
         return 22.5
@@ -57,6 +64,7 @@ def target_bedtime(user):
 
 
 def sleep_fitness(vector, user):
+    # Weighted sleep quality score: 0.35*duration + 0.20*bedtime + 0.15*wake_time + 0.15*quality + 0.15*consistency
     duration_score = closeness(vector["sleep_hours"], target_sleep_hours(user))
     bedtime_score = time_closeness(vector["bedtime"], target_bedtime(user))
 
@@ -76,10 +84,12 @@ def sleep_fitness(vector, user):
 
 
 def random_position(bounds):
+    # Generates random position vector within bounds for PSO initialization
     return {key: random.uniform(low, high) for key, (low, high) in bounds.items()}
 
 
 def random_velocity(bounds):
+    # Generates random velocity vector: 10% of bounds range in random direction
     velocity = {}
     for key, (low, high) in bounds.items():
         span = high - low
@@ -88,6 +98,7 @@ def random_velocity(bounds):
 
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
+    # Particle Swarm Optimization: uses 40 particles with inertia=0.72, cognitive=social=1.49
     swarm = []
 
     for _ in range(swarm_size):
@@ -151,6 +162,7 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
 
 
 def optimize_sleep(user, seed=303):
+    # Optimizes sleep plan using PSO to maximize sleep_fitness for user profile
     random.seed(seed)
     return pso_maximize(
         fitness_fn=lambda vector: sleep_fitness(vector, user),

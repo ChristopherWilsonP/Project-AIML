@@ -27,16 +27,19 @@ INTEGER_KEYS = {
 
 
 def clamp(value, low=0.0, high=1.0):
+    # Constrains value between low and high bounds
     return max(low, min(value, high))
 
 
 def closeness(actual, target):
+    # Calculates how close actual is to target: clamp(1 - |actual-target|/target)
     if target == 0:
         return 0
     return clamp(1 - abs(actual - target) / target)
 
 
 def round_vector(position):
+    # Rounds vector values: integers for exercise metrics, 2 decimals for others
     vector = {}
     for key, value in position.items():
         if key in INTEGER_KEYS:
@@ -47,6 +50,7 @@ def round_vector(position):
 
 
 def target_sets(user, muscle):
+    # Calculates target sets for muscle group: base value adjusted by goal (0.85-1.15) and experience (0.70-1.15)
     goal = user.get("goal", "hypertrophy")
     experience = user.get("experience", "beginner")
 
@@ -73,6 +77,7 @@ def target_sets(user, muscle):
 
 
 def target_intensity(user):
+    # Returns target workout intensity: 0.85 (strength), 0.65 (fat_loss), 0.72 (hypertrophy)
     goal = user.get("goal", "hypertrophy")
     if goal == "strength":
         return 0.85
@@ -82,6 +87,7 @@ def target_intensity(user):
 
 
 def target_reps(user):
+    # Returns target reps per set: 5 (strength), 12 (fat_loss), 10 (hypertrophy)
     goal = user.get("goal", "hypertrophy")
     if goal == "strength":
         return 5
@@ -91,6 +97,7 @@ def target_reps(user):
 
 
 def target_rest(user):
+    # Returns target rest between sets: 3.0 min (strength), 1.5 min (fat_loss), 2.0 min (hypertrophy)
     goal = user.get("goal", "hypertrophy")
     if goal == "strength":
         return 3.0
@@ -100,6 +107,7 @@ def target_rest(user):
 
 
 def target_weekly_minutes(user):
+    # Calculates target weekly training minutes: base 220-280 adjusted by goal and experience
     goal = user.get("goal", "hypertrophy")
     experience = user.get("experience", "beginner")
 
@@ -119,6 +127,7 @@ def target_weekly_minutes(user):
 
 
 def workout_fitness(vector, user):
+    # Weighted workout quality score: 0.35*volume + 0.20*intensity + 0.15*reps + 0.10*rest + 0.10*time + 0.10*workload
     muscle_keys = [
         "chest_sets",
         "back_sets",
@@ -160,10 +169,12 @@ def workout_fitness(vector, user):
 
 
 def random_position(bounds):
+    # Generates random position vector within bounds for PSO initialization
     return {key: random.uniform(low, high) for key, (low, high) in bounds.items()}
 
 
 def random_velocity(bounds):
+    # Generates random velocity vector: 10% of bounds range in random direction
     velocity = {}
     for key, (low, high) in bounds.items():
         span = high - low
@@ -172,6 +183,7 @@ def random_velocity(bounds):
 
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
+    # Particle Swarm Optimization: uses 40 particles with inertia=0.72, cognitive=social=1.49
     swarm = []
 
     for _ in range(swarm_size):
@@ -235,6 +247,7 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
 
 
 def optimize_workout(user, seed=101):
+    # Optimizes workout plan using PSO to maximize workout_fitness for user profile
     random.seed(seed)
     return pso_maximize(
         fitness_fn=lambda vector: workout_fitness(vector, user),

@@ -20,16 +20,19 @@ INTEGER_KEYS = {
 
 
 def clamp(value, low=0.0, high=1.0):
+    # Constrains value between low and high bounds
     return max(low, min(value, high))
 
 
 def closeness(actual, target):
+    # Calculates how close actual is to target: clamp(1 - |actual-target|/target)
     if target == 0:
         return 0
     return clamp(1 - abs(actual - target) / target)
 
 
 def round_vector(position):
+    # Rounds vector values: integers for key nutrients, 2 decimals for others
     vector = {}
     for key, value in position.items():
         if key in INTEGER_KEYS:
@@ -40,6 +43,7 @@ def round_vector(position):
 
 
 def target_calories(user):
+    # Calculates daily calorie target: maintenance = weight*30, adjusted by goal (-400, +400, +250)
     weight = user.get("weight", 70)
     goal = user.get("goal", "hypertrophy")
     maintenance = weight * 30
@@ -54,6 +58,7 @@ def target_calories(user):
 
 
 def target_protein(user):
+    # Calculates daily protein target: multiplier 2.0 (fat_loss), 2.1 (strength), 1.8 (hypertrophy) × weight
     weight = user.get("weight", 70)
     goal = user.get("goal", "hypertrophy")
 
@@ -65,11 +70,13 @@ def target_protein(user):
 
 
 def target_water(user):
+    # Calculates daily water intake: weight × 0.035 liters
     weight = user.get("weight", 70)
     return weight * 0.035
 
 
 def target_macro_ratio(user):
+    # Returns target macronutrient calorie ratios by goal: fat_loss/strength/hypertrophy
     goal = user.get("goal", "hypertrophy")
     if goal == "fat_loss":
         return {"carbs": 0.40, "protein": 0.35, "fat": 0.25}
@@ -79,6 +86,7 @@ def target_macro_ratio(user):
 
 
 def macro_calories(vector):
+    # Converts macronutrient grams to calories: carbs*4, protein*4, fat*9
     return {
         "carbs": vector["carbs_g"] * 4,
         "protein": vector["protein_g"] * 4,
@@ -87,6 +95,7 @@ def macro_calories(vector):
 
 
 def macro_ratio_score(vector, user):
+    # Scores how well macro ratio matches target: clamp(1 - sum of absolute deviations)
     macros = macro_calories(vector)
     total = sum(macros.values())
     if total <= 0:
@@ -99,6 +108,7 @@ def macro_ratio_score(vector, user):
 
 
 def diet_fitness(vector, user):
+    # Weighted diet quality score: 0.30*calories + 0.25*protein + 0.20*macros + 0.15*consistency + 0.05*meals + 0.05*water
     calories_score = closeness(vector["calories"], target_calories(user))
     protein_score = closeness(vector["protein_g"], target_protein(user))
     macro_score = macro_ratio_score(vector, user)
@@ -120,10 +130,12 @@ def diet_fitness(vector, user):
 
 
 def random_position(bounds):
+    # Generates random position vector within bounds for PSO initialization
     return {key: random.uniform(low, high) for key, (low, high) in bounds.items()}
 
 
 def random_velocity(bounds):
+    # Generates random velocity vector: 10% of bounds range in random direction
     velocity = {}
     for key, (low, high) in bounds.items():
         span = high - low
@@ -132,6 +144,7 @@ def random_velocity(bounds):
 
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
+    # Particle Swarm Optimization: uses 40 particles with inertia=0.72, cognitive=social=1.49
     swarm = []
 
     for _ in range(swarm_size):
@@ -195,6 +208,7 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
 
 
 def optimize_diet(user, seed=202):
+    # Optimizes diet plan using PSO to maximize diet_fitness for user profile
     random.seed(seed)
     return pso_maximize(
         fitness_fn=lambda vector: diet_fitness(vector, user),
