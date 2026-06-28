@@ -12,12 +12,12 @@ WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 
 
 def clamp(value, low=0.0, high=1.0):
-    # Constrains value between low and high bounds using: clamp = max(low, min(value, high))
+    # Constraint nilai antara low dan high bounds menggunakan: clamp = max(low, min(value, high))
     return max(low, min(value, high))
 
 
 def total_training_sets(workout):
-    # Calculates total weekly training sets: chest + back + legs + shoulder + arm
+    # Hitung total set mingguan: chest + back + legs + shoulder + arm
     return (
         workout["chest_sets"]
         + workout["back_sets"]
@@ -103,7 +103,7 @@ def profile_assessment(user):
 
 
 def target_calories(user):
-    # Calculates daily target calories based on goal: maintenance = weight * 30, then adds/subtracts based on goal
+    # Hitung target kalori harian berdasarkan goal: maintenance = weight * 30, disesuaikan dengan goal
     # fat_loss: -400, muscle_gain: +400, strength: +250, default: maintenance
     weight = user["weight"]
     goal = user["goal"]
@@ -119,9 +119,9 @@ def target_calories(user):
 
 
 def interaction_score(workout, diet, sleep, user):
-    # Calculates compatibility score between workout, diet, and sleep by penalizing misalignments
-    # Checks: protein >= max(weight*1.6, sets*1.4), calories >= target, sleep >= 7h + intensity bonus,
-    # Returns: clamp(1 - total_penalty) scaled 0-1
+    # Hitung skor kompatibilitas workout, diet, dan sleep dengan penalizing ketidaksesuaian
+    # Cek: protein >= max(weight*1.6, sets*1.4), calori >= target, sleep >= 7h + intensity bonus,
+    # Kembalikan: clamp(1 - total_penalty) dalam skala 0-1
     penalty = 0
 
     weekly_sets = total_training_sets(workout)
@@ -148,8 +148,8 @@ def interaction_score(workout, diet, sleep, user):
 
 
 def build_combined_plan(user, seed=None):
-    # Combines optimized workout, diet, and sleep vectors into a single plan
-    # Computes weighted final score: 0.35*workout + 0.30*diet + 0.20*sleep + 0.15*compatibility
+    # Gabungkan vector workout, diet, dan sleep yang sudah dioptimasi jadi satu plan
+    # Hitung skor akhir terbobot: 0.35*workout + 0.30*diet + 0.20*sleep + 0.15*compatibility
     user = validate_user(user)
 
     if seed is None:

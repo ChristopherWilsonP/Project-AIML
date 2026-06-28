@@ -64,19 +64,19 @@ EXPERIENCE_TIME_MULTIPLIERS = {
 
 
 def clamp(value, low=0.0, high=1.0):
-    # Constrains value between low and high bounds
+    # Constraint nilai antara low dan high bounds
     return max(low, min(value, high))
 
 
 def closeness(actual, target):
-    # Calculates how close actual is to target: clamp(1 - |actual-target|/target)
+    # Hitung seberapa dekat actual dengan target: clamp(1 - |actual - target|/target)
     if target == 0:
         return 0
     return clamp(1 - abs(actual - target) / target)
 
 
 def round_vector(position):
-    # Rounds vector values: integers for exercise metrics, 2 decimals for others
+    # Bulatkan nilai vector: integer untuk exercise metrics, 2 desimal untuk yang lain
     vector = {}
     for key, value in position.items():
         if key in INTEGER_KEYS:
@@ -87,7 +87,7 @@ def round_vector(position):
 
 
 def target_sets(user, muscle):
-    # Calculates target sets from workout bounds, adjusted by goal and experience
+    # Hitung target set dari workout bounds, disesuaikan dengan goal dan experience
     goal = user["goal"]
     experience = user["experience"]
 
@@ -108,7 +108,7 @@ def target_reps(user):
 
 
 def target_weekly_minutes(user):
-    # Calculates target weekly training minutes: base 220-280 adjusted by goal and experience
+    # Hitung target total menit latihan per minggu: base 220-280 disesuaikan goal dan experience
     goal = user["goal"]
     experience = user["experience"]
 
@@ -159,12 +159,12 @@ def workout_fitness(vector, user):
 
 
 def random_position(bounds):
-    # Generates random position vector within bounds for PSO initialization
+    # Buat posisi random dalam bounds untuk inisialisasi PSO
     return {key: random.uniform(low, high) for key, (low, high) in bounds.items()}
 
 
 def random_velocity(bounds):
-    # Generates random velocity vector: 10% of bounds range in random direction
+    # Buat velocity random: 10% dari rentang bounds dalam arah random
     velocity = {}
     for key, (low, high) in bounds.items():
         span = high - low
@@ -173,7 +173,7 @@ def random_velocity(bounds):
 
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
-    # Particle Swarm Optimization: uses 40 particles with inertia=0.72, cognitive=social=1.49
+    # Particle Swarm Optimization: pakai 40 particle dengan inertia=0.70, cognitive=social=1.50
     swarm = []
 
     for _ in range(swarm_size):
@@ -237,7 +237,7 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
 
 
 def optimize_workout(user, seed=None):
-    # Optimizes workout plan using PSO to maximize workout_fitness for user profile
+    # Optimasi rencana workout pakai PSO untuk maksimalkan workout_fitness sesuai profil user
     if seed is not None:
         random.seed(seed)
         

@@ -11,24 +11,24 @@ SLEEP_BOUNDS = {
 
 
 def clamp(value, low=0.0, high=1.0):
-    # Constrains value between low and high bounds
+    # Constraint nilai antara low dan high bounds
     return max(low, min(value, high))
 
 
 def closeness(actual, target):
-    # Calculates how close actual is to target: clamp(1 - |actual-target|/target)
+    # Hitung seberapa dekat actual dengan target: clamp(1 - |actual - target|/target)
     if target == 0:
         return 0
     return clamp(1 - abs(actual - target) / target)
 
 
 def round_vector(position):
-    # Rounds all vector values to 2 decimal places
+    # Bulatkan semua nilai vector ke 2 desimal
     return {key: round(value, 2) for key, value in position.items()}
 
 
 def circular_hour_distance(actual, target):
-    # Calculates shortest distance between hours on 24-hour cycle: min(diff, 24-diff)
+    # Hitung jarak terpendek antara jam pada siklus 24 jam: min(diff, 24-diff)
     actual = actual % 24
     target = target % 24
     diff = abs(actual - target)
@@ -36,13 +36,13 @@ def circular_hour_distance(actual, target):
 
 
 def time_closeness(actual, target, tolerance=6):
-    # Scores time closeness accounting for 24-hour cycle: clamp(1 - distance/tolerance)
+    # Skor kedekatan waktu dengan memperhitungkan siklus 24 jam: clamp(1 - distance/tolerance)
     diff = circular_hour_distance(actual, target)
     return clamp(1 - diff / tolerance)
 
 
 def target_sleep_hours(user):
-    # Calculates target sleep duration: 7.5h base, +0.5h (strength), +0.25h (advanced)
+    # Hitung target durasi tidur: 7.5h dasar, +0.5h (strength), +0.25h (advanced)
     goal = user["goal"]
     experience = user["experience"]
 
@@ -56,7 +56,7 @@ def target_sleep_hours(user):
 
 
 def target_bedtime(user):
-    # Returns target bedtime: 22:30 (fat_loss), 23:00 (other goals)
+    # Kembalikan target waktu tidur: 22:30 (fat_loss), 23:00 (goal lain)
     goal = user["goal"]
     if goal == "fat_loss":
         return 22.5
@@ -84,12 +84,12 @@ def sleep_fitness(vector, user):
 
 
 def random_position(bounds):
-    # Generates random position vector within bounds for PSO initialization
+    # Buat posisi random dalam bounds untuk inisialisasi PSO
     return {key: random.uniform(low, high) for key, (low, high) in bounds.items()}
 
 
 def random_velocity(bounds):
-    # Generates random velocity vector: 10% of bounds range in random direction
+    # Buat velocity random: 10% dari rentang bounds dalam arah random
     velocity = {}
     for key, (low, high) in bounds.items():
         span = high - low
@@ -98,7 +98,7 @@ def random_velocity(bounds):
 
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
-    # Particle Swarm Optimization: uses 40 particles with w=0.70, c1=c2=1.50
+    # Particle Swarm Optimization: pakai 40 particle dengan w=0.70, c1=c2=1.50
     swarm = []
 
     for _ in range(swarm_size):
@@ -162,7 +162,7 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
 
 
 def optimize_sleep(user, seed=None):
-    # Optimizes sleep plan using PSO to maximize sleep_fitness for user profile
+    # Optimasi rencana tidur pakai PSO untuk maksimalkan sleep_fitness sesuai profil user
     if seed is not None:
         random.seed(seed)
     return pso_maximize(
