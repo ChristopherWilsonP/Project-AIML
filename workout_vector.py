@@ -34,11 +34,11 @@ GOAL_SET_MULTIPLIERS = {
 
 EXPERIENCE_SET_MULTIPLIERS = {
     "beginner": 0.70,
-    "intermediate": 1.85,
+    "intermediate": 0.85,
     "advanced": 1.00,
 }
 
-GOAL_INTENSITY_TARGETS = {
+GOAL_INTENSITY_TARGETS = { 
     "fat_loss": 0.65,
     "muscle_gain": 0.72,
     "strength": 0.85,
@@ -64,12 +64,14 @@ EXPERIENCE_TIME_MULTIPLIERS = {
 
 
 def clamp(value, low=0.0, high=1.0):
-    # Batasi nilai antara low dan high bounds.
-    # Rumus: clamp(x) = max(low, min(x, high))
+    # Menjaga nilai tetap berada dalam range tertentu.
+    # Dipakai agar score tidak kurang dari 0 atau lebih dari 1.
     return max(low, min(value, high))
 
 
 def closeness(actual, target):
+    # Mengubah jarak antara nilai aktual dan target menjadi score 0-1.
+    # Semakin dekat actual ke target, score semakin mendekati 1.
     # Hitung seberapa dekat actual dengan target: clamp(1 - |actual - target|/target)
     if target == 0:
         return 0
@@ -77,6 +79,8 @@ def closeness(actual, target):
 
 
 def round_vector(position):
+    # Mengubah posisi particle menjadi bentuk vector workout yang valid.
+    # Karena PSO menghasilkan float, nilai diskrit seperti days/reps/set perlu dibulatkan.
     # Bulatkan nilai vector: integer untuk exercise metrics, 2 desimal untuk yang lain
     vector = {}
     for key, value in position.items():
@@ -88,6 +92,8 @@ def round_vector(position):
 
 
 def target_sets(user, muscle):
+    # Menentukan target intensity berdasarkan goal.
+    # Strength butuh intensity lebih tinggi, fat loss lebih sedang, muscle gain di tengah.
     # Hitung target set dari workout bounds, disesuaikan dengan goal dan experience.
     # Rumus: target = average(low, high) * goal_multiplier * experience_multiplier
     goal = user["goal"]
@@ -182,9 +188,11 @@ def random_position(bounds):
 
 def random_velocity(bounds):
     # Buat velocity random: 10% dari rentang bounds dalam arah random
+    # Membuat arah dan kecepatan awal particle.
+    # Velocity menentukan seberapa jauh particle bergerak di search space.
     velocity = {}
-    for key, (low, high) in bounds.items():
-        span = high - low
+    for key, (low, high) in bounds.items(): #contoh key = "days_per_week", low=2, high=6
+        span = high - low #contoh span = 6-2=4
         velocity[key] = random.uniform(-span, span) * 0.1
     return velocity
 
@@ -210,7 +218,7 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
             }
         )
 
-    best_particle = max(swarm, key=lambda particle: particle["best_score"])
+    best_particle = max(swarm, key=lambda particle: particle["best_score"]) #mengambil "best_score" tertinggi dari semua particle
     global_best_position = best_particle["best_position"].copy()
     global_best_score = best_particle["best_score"]
     history = [global_best_score]
