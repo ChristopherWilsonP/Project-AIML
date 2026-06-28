@@ -11,7 +11,7 @@ WORKOUT_BOUNDS = {
     "arm_sets": (20, 20),
     "intensity": (0.50, 0.95),
     "reps": (4, 15),
-    "rest_minutes": (1.0, 4.0),
+    "rest_gap": (1, 5),
 }
 
 INTEGER_KEYS = {
@@ -23,6 +23,43 @@ INTEGER_KEYS = {
     "shoulder_sets",
     "arm_sets",
     "reps",
+    "rest_gap",
+}
+
+GOAL_SET_MULTIPLIERS = {
+    "fat_loss": 0.85,
+    "muscle_gain": 1.00,
+    "strength": 0.90,
+}
+
+EXPERIENCE_SET_MULTIPLIERS = {
+    "beginner": 0.70,
+    "intermediate": 1.85,
+    "advanced": 1.00,
+}
+
+GOAL_INTENSITY_TARGETS = {
+    "fat_loss": 0.65,
+    "muscle_gain": 0.72,
+    "strength": 0.85,
+}
+
+GOAL_REP_TARGETS = {
+    "fat_loss": 12,
+    "muscle_gain": 10,
+    "strength": 5,
+}
+
+GOAL_WEEKLY_MINUTES = {
+    "fat_loss": 280,
+    "muscle_gain": 220,
+    "strength": 240,
+}
+
+EXPERIENCE_TIME_MULTIPLIERS = {
+    "beginner": 0.75,
+    "intermediate": 0.85,
+    "advanced": 1.00,
 }
 
 
@@ -51,76 +88,35 @@ def round_vector(position):
 
 def target_sets(user, muscle):
     # Calculates target sets from workout bounds, adjusted by goal and experience
-    goal = user.get("goal", "hypertrophy")
-    experience = user.get("experience", "beginner")
+    goal = user["goal"]
+    experience = user["experience"]
 
     low, high = WORKOUT_BOUNDS[muscle]
     value = (low + high) / 2
-
-    if goal == "fat_loss":
-        value *= 0.85
-    elif goal == "strength":
-        value *= 0.90
-
-    if experience == "beginner":
-        value *= 0.70
-    elif experience == "advanced":
-        value *= 1.15
-
-    return value
+    return value * GOAL_SET_MULTIPLIERS[goal] * EXPERIENCE_SET_MULTIPLIERS[experience]
 
 def target_intensity(user):
-    # Returns target workout intensity: 0.85 (strength), 0.65 (fat_loss), 0.72 (hypertrophy)
-    goal = user.get("goal", "hypertrophy")
-    if goal == "strength":
-        return 0.85
-    if goal == "fat_loss":
-        return 0.65
-    return 0.72
+    # Returns target workout intensity: 0.85 (strength), 0.65 (fat_loss), 0.72 (muscle_gain)
+    goal = user["goal"]
+    return GOAL_INTENSITY_TARGETS[goal]
 
 
 def target_reps(user):
-    # Returns target reps per set: 5 (strength), 12 (fat_loss), 10 (hypertrophy)
-    goal = user.get("goal", "hypertrophy")
-    if goal == "strength":
-        return 5
-    if goal == "fat_loss":
-        return 12
-    return 10
-
-
-def target_rest(user):
-    # Returns target rest between sets: 3.0 min (strength), 1.5 min (fat_loss), 2.0 min (hypertrophy)
-    goal = user.get("goal", "hypertrophy")
-    if goal == "strength":
-        return 3.0
-    if goal == "fat_loss":
-        return 1.5
-    return 2.0
+    # Returns target reps per set: 5 (strength), 12 (fat_loss), 10 (muscle_gain)
+    goal = user["goal"]
+    return GOAL_REP_TARGETS[goal]
 
 
 def target_weekly_minutes(user):
     # Calculates target weekly training minutes: base 220-280 adjusted by goal and experience
-    goal = user.get("goal", "hypertrophy")
-    experience = user.get("experience", "beginner")
+    goal = user["goal"]
+    experience = user["experience"]
 
-    if goal == "fat_loss":
-        target = 280
-    elif goal == "strength":
-        target = 240
-    else:
-        target = 220
-
-    if experience == "beginner":
-        target *= 0.85
-    elif experience == "advanced":
-        target *= 1.15
-
-    return target
+    return GOAL_WEEKLY_MINUTES[goal] * EXPERIENCE_TIME_MULTIPLIERS[experience]
 
 
 def workout_fitness(vector, user):
-    # Weighted workout quality score: 0.35*volume + 0.20*intensity + 0.15*reps + 0.10*rest + 0.10*time + 0.10*workload
+    # Weighted workout quality score: volume, intensity, reps, weekly time, workload, and weekly rest-day consistency
     muscle_keys = [
         "chest_sets",
         "back_sets",
@@ -142,7 +138,6 @@ def workout_fitness(vector, user):
 
     intensity_score = closeness(vector["intensity"], target_intensity(user))
     reps_score = closeness(vector["reps"], target_reps(user))
-    rest_score = closeness(vector["rest_minutes"], target_rest(user))
 
     weekly_minutes = vector["days_per_week"] * vector["session_minutes"]
     time_score = closeness(weekly_minutes, target_weekly_minutes(user))
@@ -151,13 +146,15 @@ def workout_fitness(vector, user):
     sets_per_day = total_sets / max(1, vector["days_per_week"])
     workload_score = clamp(1 - max(0, sets_per_day - 24) / 24)
 
+    schedule_score = closeness(vector["days_per_week"] + vector["rest_gap"], 7)
+
     return clamp(
         0.35 * volume_score
         + 0.20 * intensity_score
         + 0.15 * reps_score
-        + 0.10 * rest_score
         + 0.10 * time_score
         + 0.10 * workload_score
+        + 0.10 * schedule_score
     )
 
 
@@ -199,9 +196,9 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
     global_best_score = best_particle["best_score"]
     history = [global_best_score]
 
-    inertia = 0.72
-    cognitive = 1.49
-    social = 1.49
+    w = 0.70
+    c1 = 1.50
+    c2 = 1.50
 
     for _ in range(iterations):
         for particle in swarm:
@@ -211,9 +208,9 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
                 current = particle["position"][key]
 
                 particle["velocity"][key] = (
-                    inertia * particle["velocity"][key]
-                    + cognitive * r1 * (particle["best_position"][key] - current)
-                    + social * r2 * (global_best_position[key] - current)
+                    w * particle["velocity"][key]
+                    + c1 * r1 * (particle["best_position"][key] - current)
+                    + c2 * r2 * (global_best_position[key] - current)
                 )
 
                 next_value = current + particle["velocity"][key]
@@ -239,9 +236,11 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
     }
 
 
-def optimize_workout(user, seed=101):
+def optimize_workout(user, seed=None):
     # Optimizes workout plan using PSO to maximize workout_fitness for user profile
-    random.seed(seed)
+    if seed is not None:
+        random.seed(seed)
+        
     return pso_maximize(
         fitness_fn=lambda vector: workout_fitness(vector, user),
         bounds=WORKOUT_BOUNDS,

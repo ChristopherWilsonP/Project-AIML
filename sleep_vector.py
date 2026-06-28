@@ -43,8 +43,8 @@ def time_closeness(actual, target, tolerance=6):
 
 def target_sleep_hours(user):
     # Calculates target sleep duration: 7.5h base, +0.5h (strength), +0.25h (advanced)
-    goal = user.get("goal", "hypertrophy")
-    experience = user.get("experience", "beginner")
+    goal = user["goal"]
+    experience = user["experience"]
 
     target = 7.5
     if goal == "strength":
@@ -57,7 +57,7 @@ def target_sleep_hours(user):
 
 def target_bedtime(user):
     # Returns target bedtime: 22:30 (fat_loss), 23:00 (other goals)
-    goal = user.get("goal", "hypertrophy")
+    goal = user["goal"]
     if goal == "fat_loss":
         return 22.5
     return 23.0
@@ -98,7 +98,7 @@ def random_velocity(bounds):
 
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
-    # Particle Swarm Optimization: uses 40 particles with inertia=0.72, cognitive=social=1.49
+    # Particle Swarm Optimization: uses 40 particles with w=0.70, c1=c2=1.50
     swarm = []
 
     for _ in range(swarm_size):
@@ -121,9 +121,9 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
     global_best_score = best_particle["best_score"]
     history = [global_best_score]
 
-    inertia = 0.72
-    cognitive = 1.49
-    social = 1.49
+    w = 0.70
+    c1 = 1.50
+    c2 = 1.50
 
     for _ in range(iterations):
         for particle in swarm:
@@ -133,9 +133,9 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
                 current = particle["position"][key]
 
                 particle["velocity"][key] = (
-                    inertia * particle["velocity"][key]
-                    + cognitive * r1 * (particle["best_position"][key] - current)
-                    + social * r2 * (global_best_position[key] - current)
+                    w * particle["velocity"][key]
+                    + c1 * r1 * (particle["best_position"][key] - current)
+                    + c2 * r2 * (global_best_position[key] - current)
                 )
 
                 next_value = current + particle["velocity"][key]
@@ -161,9 +161,10 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
     }
 
 
-def optimize_sleep(user, seed=303):
+def optimize_sleep(user, seed=None):
     # Optimizes sleep plan using PSO to maximize sleep_fitness for user profile
-    random.seed(seed)
+    if seed is not None:
+        random.seed(seed)
     return pso_maximize(
         fitness_fn=lambda vector: sleep_fitness(vector, user),
         bounds=SLEEP_BOUNDS,

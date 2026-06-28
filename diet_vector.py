@@ -4,10 +4,10 @@ import random
 DIET_BOUNDS = {
     "calories": (1200, 4500),
     "protein_g": (50, 260),
-    "carbs_g": (50, 650),
-    "fat_g": (25, 180),
-    "meals_per_day": (2, 6),
-    "water_liters": (1.5, 5.0),
+    "carbs_g": (80, 600),
+    "fat_g": (25, 160),
+    "meals_per_day": (2, 4),
+    "water_liters": (2.0, 5.0),
 }
 
 INTEGER_KEYS = {
@@ -44,13 +44,13 @@ def round_vector(position):
 
 def target_calories(user):
     # Calculates daily calorie target: maintenance = weight*30, adjusted by goal (-400, +400, +250)
-    weight = user.get("weight", 70)
-    goal = user.get("goal", "hypertrophy")
+    weight = user["weight"]
+    goal = user["goal"]
     maintenance = weight * 30
 
     if goal == "fat_loss":
         return maintenance - 400
-    if goal == "hypertrophy":
+    if goal == "muscle_gain":
         return maintenance + 400
     if goal == "strength":
         return maintenance + 250
@@ -58,32 +58,33 @@ def target_calories(user):
 
 
 def target_protein(user):
-    # Calculates daily protein target: multiplier 2.0 (fat_loss), 2.1 (strength), 1.8 (hypertrophy) × weight
-    weight = user.get("weight", 70)
-    goal = user.get("goal", "hypertrophy")
+    # Calculates daily protein target: multiplier 2.0 (fat_loss), 2.1 (strength), 1.8 (muscle_gain) × weight
+    weight = user["weight"]
+    goal = user["goal"]
 
     if goal == "fat_loss":
-        return weight * 2.0
+        return weight * 1.5
     if goal == "strength":
-        return weight * 2.1
-    return weight * 1.8
+        return weight * 1.8
+    if goal == "muscle_gain":
+        return weight * 2.0
 
 
 def target_water(user):
     # Calculates daily water intake: weight × 0.035 liters
-    weight = user.get("weight", 70)
+    weight = user["weight"]
     return weight * 0.035
 
 
 def target_macro_ratio(user):
-    # Returns target macronutrient calorie ratios by goal: fat_loss/strength/hypertrophy
-    goal = user.get("goal", "hypertrophy")
+    # Returns target macronutrient calorie ratios by goal: fat_loss/strength/muscle_gain
+    goal = user["goal"]
     if goal == "fat_loss":
-        return {"carbs": 0.40, "protein": 0.35, "fat": 0.25}
+        return {"carbs": 0.40, "protein": 0.45, "fat": 0.15}
     if goal == "strength":
         return {"carbs": 0.45, "protein": 0.30, "fat": 0.25}
-    return {"carbs": 0.50, "protein": 0.25, "fat": 0.25}
-
+    if goal == "muscle_gain":
+        return {"carbs": 0.40, "protein": 0.40, "fat": 0.20}
 
 def macro_calories(vector):
     # Converts macronutrient grams to calories: carbs*4, protein*4, fat*9
@@ -144,7 +145,7 @@ def random_velocity(bounds):
 
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
-    # Particle Swarm Optimization: uses 40 particles with inertia=0.72, cognitive=social=1.49
+    # Particle Swarm Optimization: uses 40 particles with w=0.70, c1=c2=1.50
     swarm = []
 
     for _ in range(swarm_size):
@@ -167,9 +168,9 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
     global_best_score = best_particle["best_score"]
     history = [global_best_score]
 
-    inertia = 0.72
-    cognitive = 1.49
-    social = 1.49
+    w = 0.70
+    c1 = 1.50
+    c2 = 1.50
 
     for _ in range(iterations):
         for particle in swarm:
@@ -179,9 +180,9 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
                 current = particle["position"][key]
 
                 particle["velocity"][key] = (
-                    inertia * particle["velocity"][key]
-                    + cognitive * r1 * (particle["best_position"][key] - current)
-                    + social * r2 * (global_best_position[key] - current)
+                    w * particle["velocity"][key]
+                    + c1 * r1 * (particle["best_position"][key] - current)
+                    + c2 * r2 * (global_best_position[key] - current)
                 )
 
                 next_value = current + particle["velocity"][key]
@@ -207,9 +208,10 @@ def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
     }
 
 
-def optimize_diet(user, seed=202):
+def optimize_diet(user, seed=None):
     # Optimizes diet plan using PSO to maximize diet_fitness for user profile
-    random.seed(seed)
+    if seed is not None:
+        random.seed(seed)
     return pso_maximize(
         fitness_fn=lambda vector: diet_fitness(vector, user),
         bounds=DIET_BOUNDS,
