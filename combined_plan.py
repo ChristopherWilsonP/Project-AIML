@@ -265,3 +265,12 @@ if __name__ == "__main__":
     user_profile = get_user_input()
     result = build_combined_plan(user_profile)
     print(json.dumps(result, indent=2))
+
+
+#test case
+
+# yang normal
+# python -c "from combined_plan import build_combined_plan; import json; result = build_combined_plan({'weight': 85, 'height': 180, 'goal': 'fat_loss', 'experience': 'advanced'}); print(json.dumps(result, indent=2))"
+
+#yg anomali
+# python -c "from combined_plan import build_combined_plan; import json; result = build_combined_plan({'weight': 150, 'height': 160, 'goal': 'fat_loss', 'experience': 'beginner'}); print(json.dumps(result, indent=2))"
