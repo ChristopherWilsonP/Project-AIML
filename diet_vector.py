@@ -43,8 +43,8 @@ def round_vector(position):
 
 
 def target_calories(user):
-    # Hitung target kalori: maintenance = weight*30, disesuaikan berdasarkan goal
-    # fat_loss: -400, muscle_gain: +400, strength: +250
+    # Hitung target kalori: maintenance = weight*30, disesuaikan berdasarkan goal.
+    # Rumus: fat_loss = maintenance - 400, muscle_gain = maintenance + 400, strength = maintenance + 250
     weight = user["weight"]
     goal = user["goal"]
     maintenance = weight * 30
@@ -59,7 +59,9 @@ def target_calories(user):
 
 
 def target_protein(user):
-    # Hitung target protein harian: 1.5x untuk fat_loss, 1.8x untuk strength, 2.0x untuk muscle_gain
+    # Hitung target protein harian.
+    # Rumus: protein = weight * multiplier, multiplier = 1.5/1.8/2.0 tergantung goal
+    # Rumus: fat_loss = weight * 1.5, strength = weight * 1.8, muscle_gain = weight * 2.0
     weight = user["weight"]
     goal = user["goal"]
 
@@ -88,7 +90,8 @@ def target_macro_ratio(user):
         return {"carbs": 0.40, "protein": 0.40, "fat": 0.20}
 
 def macro_calories(vector):
-    # Konversi gram makro ke kalori: carbs*4, protein*4, fat*9
+    # Konversi gram makro ke kalori.
+    # Rumus: carbs_cal = carbs_g * 4, protein_cal = protein_g * 4, fat_cal = fat_g * 9
     return {
         "carbs": vector["carbs_g"] * 4,
         "protein": vector["protein_g"] * 4,
@@ -97,7 +100,8 @@ def macro_calories(vector):
 
 
 def macro_ratio_score(vector, user):
-    # Skor kecocokan rasio makro: clamp(1 - total deviasi)
+    # Skor kecocokan rasio makro.
+    # Rumus: actual_ratio = macro_calories / total_cal, deviation = sum(abs(actual-target)), score = clamp(1-deviation)
     macros = macro_calories(vector)
     total = sum(macros.values())
     if total <= 0:
@@ -147,6 +151,7 @@ def random_velocity(bounds):
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
     # Particle Swarm Optimization: pakai 40 particle dengan w=0.70, c1=c2=1.50
+    # Rumus update velocity: v = w*v + c1*r1*(pbest-current) + c2*r2*(gbest-current)
     swarm = []
 
     for _ in range(swarm_size):

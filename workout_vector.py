@@ -64,7 +64,8 @@ EXPERIENCE_TIME_MULTIPLIERS = {
 
 
 def clamp(value, low=0.0, high=1.0):
-    # Constraint nilai antara low dan high bounds
+    # Batasi nilai antara low dan high bounds.
+    # Rumus: clamp(x) = max(low, min(x, high))
     return max(low, min(value, high))
 
 
@@ -87,7 +88,8 @@ def round_vector(position):
 
 
 def target_sets(user, muscle):
-    # Hitung target set dari workout bounds, disesuaikan dengan goal dan experience
+    # Hitung target set dari workout bounds, disesuaikan dengan goal dan experience.
+    # Rumus: target = average(low, high) * goal_multiplier * experience_multiplier
     goal = user["goal"]
     experience = user["experience"]
 
@@ -108,7 +110,8 @@ def target_reps(user):
 
 
 def target_weekly_minutes(user):
-    # Hitung target total menit latihan per minggu: base 220-280 disesuaikan goal dan experience
+    # Hitung target total menit latihan per minggu.
+    # Rumus: target = base_minutes(goal) * experience_multiplier(experience)
     goal = user["goal"]
     experience = user["experience"]
 
@@ -132,20 +135,34 @@ def workout_fitness(vector, user):
         "arm_sets": 0.12,
     }
 
+    # Volume score: weighted average closeness to target sets for each muscle group
+    # Rumus: volume_score = sum(weight[m] * closeness(actual_sets[m], target_sets[m]))
     volume_score = 0
     for key in muscle_keys:
         volume_score += muscle_weights[key] * closeness(vector[key], target_sets(user, key))
 
+    # Intensity score: seberapa dekat intensity aktual dengan target intensity goal
+    # Rumus: intensity_score = closeness(actual_intensity, target_intensity)
     intensity_score = closeness(vector["intensity"], target_intensity(user))
+
+    # Reps score: seberapa dekat reps aktual dengan target reps goal
+    # Rumus: reps_score = closeness(actual_reps, target_reps)
     reps_score = closeness(vector["reps"], target_reps(user))
 
+    # Waktu latihan total per minggu
+    # Rumus: weekly_minutes = days_per_week * session_minutes
     weekly_minutes = vector["days_per_week"] * vector["session_minutes"]
     time_score = closeness(weekly_minutes, target_weekly_minutes(user))
 
+    # Workload score: penalize terlalu banyak set per hari
+    # Rumus: sets_per_day = total_sets / days_per_week
+    # workload_score = clamp(1 - max(0, sets_per_day - 24) / 24)
     total_sets = sum(vector[key] for key in muscle_keys)
     sets_per_day = total_sets / max(1, vector["days_per_week"])
     workload_score = clamp(1 - max(0, sets_per_day - 24) / 24)
 
+    # Schedule score: seberapa dekat jumlah hari latihan + hari istirahat dengan 7 hari seminggu
+    # Rumus: schedule_score = closeness(days_per_week + rest_gap, 7)
     schedule_score = closeness(vector["days_per_week"] + vector["rest_gap"], 7)
 
     return clamp(
@@ -173,7 +190,9 @@ def random_velocity(bounds):
 
 
 def pso_maximize(fitness_fn, bounds, swarm_size=40, iterations=150):
-    # Particle Swarm Optimization: pakai 40 particle dengan inertia=0.70, cognitive=social=1.50
+    # Particle Swarm Optimization: pakai 40 particle dengan inertia=0.70, cognitive=social=1.50  
+    # Rumus update velocity: v = w*v + c1*r1*(pbest-current) + c2*r2*(gbest-current)    
+
     swarm = []
 
     for _ in range(swarm_size):

@@ -11,7 +11,8 @@ SLEEP_BOUNDS = {
 
 
 def clamp(value, low=0.0, high=1.0):
-    # Constraint nilai antara low dan high bounds
+    # Constrain nilai antara low dan high bounds.
+    # Rumus: clamp(x) = max(low, min(x, high))
     return max(low, min(value, high))
 
 
@@ -28,7 +29,8 @@ def round_vector(position):
 
 
 def circular_hour_distance(actual, target):
-    # Hitung jarak terpendek antara jam pada siklus 24 jam: min(diff, 24-diff)
+    # Hitung jarak terpendek antara jam pada siklus 24 jam.
+    # Rumus: diff = abs(actual-target); distance = min(diff, 24-diff)
     actual = actual % 24
     target = target % 24
     diff = abs(actual - target)
@@ -36,7 +38,8 @@ def circular_hour_distance(actual, target):
 
 
 def time_closeness(actual, target, tolerance=6):
-    # Skor kedekatan waktu dengan memperhitungkan siklus 24 jam: clamp(1 - distance/tolerance)
+    # Skor kedekatan waktu dengan memperhitungkan siklus 24 jam.
+    # Rumus: time_closeness = clamp(1 - diff/tolerance)
     diff = circular_hour_distance(actual, target)
     return clamp(1 - diff / tolerance)
 
@@ -69,6 +72,7 @@ def sleep_fitness(vector, user):
     bedtime_score = time_closeness(vector["bedtime"], target_bedtime(user))
 
     expected_wake = (vector["bedtime"] + vector["sleep_hours"]) % 24
+    # Rumus: expected_wake = (bedtime + sleep_hours) % 24
     wake_score = time_closeness(vector["wake_time"], expected_wake, tolerance=4)
 
     quality_score = clamp(vector["sleep_quality"])

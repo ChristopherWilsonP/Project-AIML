@@ -12,12 +12,14 @@ WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 
 
 def clamp(value, low=0.0, high=1.0):
-    # Constraint nilai antara low dan high bounds menggunakan: clamp = max(low, min(value, high))
+    # Constrain nilai antara low dan high bounds.
+    # Rumus: clamp(x) = max(low, min(x, high))
     return max(low, min(value, high))
 
 
 def total_training_sets(workout):
-    # Hitung total set mingguan: chest + back + legs + shoulder + arm
+    # Hitung total set mingguan: chest + back + legs + shoulder + arm.
+    # Rumus: total = chest_sets + back_sets + legs_sets + shoulder_sets + arm_sets
     return (
         workout["chest_sets"]
         + workout["back_sets"]
@@ -103,8 +105,11 @@ def profile_assessment(user):
 
 
 def target_calories(user):
-    # Hitung target kalori harian berdasarkan goal: maintenance = weight * 30, disesuaikan dengan goal
-    # fat_loss: -400, muscle_gain: +400, strength: +250, default: maintenance
+    # Hitung target kalori harian berdasarkan goal.
+    # Rumus: maintenance = weight * 30
+    # fat_loss: maintenance - 400
+    # muscle_gain: maintenance + 400
+    # strength: maintenance + 250
     weight = user["weight"]
     goal = user["goal"]
     maintenance = weight * 30
@@ -119,9 +124,10 @@ def target_calories(user):
 
 
 def interaction_score(workout, diet, sleep, user):
-    # Hitung skor kompatibilitas workout, diet, dan sleep dengan penalizing ketidaksesuaian
-    # Cek: protein >= max(weight*1.6, sets*1.4), calori >= target, sleep >= 7h + intensity bonus,
-    # Kembalikan: clamp(1 - total_penalty) dalam skala 0-1
+    # Hitung skor kompatibilitas workout, diet, dan sleep dengan penalizing ketidaksesuaian.
+    # Cek: protein >= max(weight*1.6, total_sets*1.4), calories >= target_calories, sleep >= 7h + intensity bonus
+    # Rumus: interaction = clamp(1 - penalty)
+    # penalty = protein_penalty + calorie_penalty + sleep_penalty + overload_penalty
     penalty = 0
 
     weekly_sets = total_training_sets(workout)
@@ -168,12 +174,14 @@ def build_combined_plan(user, seed=None):
     assessment = profile_assessment(user)
 
     compatibility = interaction_score(workout, diet, sleep, user)
+    # Rumus: optimization_final = 0.35*workout_score + 0.30*diet_score + 0.20*sleep_score + 0.15*compatibility
     optimization_final = (
         0.35 * workout_result["score"]
         + 0.30 * diet_result["score"]
         + 0.20 * sleep_result["score"]
         + 0.15 * compatibility
     )
+    # Rumus: final_score = optimization_final * bmi_score_factor
     final_score = optimization_final * assessment["bmi_score_factor"]
 
     return {
